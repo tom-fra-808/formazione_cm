@@ -1,0 +1,90 @@
+---
+- name: Crea container con os differenti e accesso ssh
+  hosts: registry
+  become: true
+
+  vars:
+    containers:
+      - context: ubuntu
+        name: ubuntu-ssh
+        image: "ubuntu-ssh:22.04"
+        host_port: "2222"
+      - context: rocky
+        name: rocky-ssh
+        image: "rocky-ssh:9"
+        host_port: "2223"
+
+  tasks:
+    - name: creo directory per chiavi ssh
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/keys"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      become: false
+    
+    - name: genera chiavi ssh
+      ansible.builtin.command:
+        cmd: ssh-keygen -t rsa -b 4096 -N "" -C "genericuser@example.com" -f "{{ playbook_dir }}/keys/id_key_genericuser"
+        creates: "{{ playbook_dir }}/keys/id_key_genericuser"
+      delegate_to: localhost
+      become: false
+
+    - name: Copia la chiave pubblica nei contesti di build
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/keys/id_key_genericuser.pub"
+        dest: "{{ playbook_dir }}/{{ item.context }}/id_key_genericuser.pub"
+        mode: "0644"
+      delegate_to: localhost
+      become: false
+      loop: "{{ containers }}"
+      loop_control:
+        label: "{{ item.context }}"
+
+    - name: Crea le directory remote per i contesti di build
+      ansible.builtin.file:
+        path: "/opt/container-builds/{{ item.context }}"
+        state: directory
+        mode: "0755"
+      loop: "{{ containers }}"
+      loop_control:
+        label: "{{ item.context }}"
+
+    - name: Copia i contesti di build nella VM
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/{{ item.context }}/"
+        dest: "/opt/container-builds/{{ item.context }}/"
+      loop: "{{ containers }}"
+      loop_control:
+        label: "{{ item.context }}"
+      
+    - name: Installa la dipendenza Python per i moduli Docker
+      ansible.builtin.apt:
+        name: python3-requests
+        state: present
+        update_cache: true
+
+    - name: Costruisce le immagini Docker
+      community.docker.docker_image:
+        name: "{{ item.image }}"
+        source: build
+        state: present
+        build:
+          path: "/opt/container-builds/{{ item.context }}"
+          dockerfile: Containerfile
+      loop: "{{ containers }}"
+      loop_control:
+        label: "{{ item.image }}"
+
+    - name: Avvia i container SSH
+      community.docker.docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        detach: true
+        restart_policy: unless-stopped
+        published_ports:
+          - "{{ item.host_port }}:22"
+      loop: "{{ containers }}"
+      loop_control:
+        label: "{{ item.name }}"

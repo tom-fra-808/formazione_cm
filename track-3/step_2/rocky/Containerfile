@@ -1,0 +1,33 @@
+FROM quay.io/rockylinux/rockylinux:9
+
+# Installa il server SSH, sudo e gli strumenti per gestire gli utenti.
+RUN dnf install -y \
+        openssh-server \
+        sudo \
+        passwd \
+        shadow-utils && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
+
+# Crea genericuser e lo abilita a usare sudo senza password.
+RUN useradd --create-home --shell /bin/bash genericuser && \
+    echo 'genericuser ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/genericuser && \
+    chmod 0440 /etc/sudoers.d/genericuser
+
+# Installa la chiave pubblica autorizzata per genericuser.
+RUN install -d -m 0700 -o genericuser -g genericuser /home/genericuser/.ssh
+COPY id_key_genericuser.pub /home/genericuser/.ssh/authorized_keys
+RUN chown genericuser:genericuser /home/genericuser/.ssh/authorized_keys && \
+    chmod 0600 /home/genericuser/.ssh/authorized_keys
+
+# Configura SSH: niente root, niente password, accesso solo a genericuser.
+RUN mkdir -p /var/run/sshd && \
+    sed -ri 's/^[#[:space:]]*PermitRootLogin[[:space:]].*/PermitRootLogin no/' /etc/ssh/sshd_config && \
+    sed -ri 's/^[#[:space:]]*PasswordAuthentication[[:space:]].*/PasswordAuthentication no/' /etc/ssh/sshd_config && \
+    sed -ri 's/^[#[:space:]]*PubkeyAuthentication[[:space:]].*/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
+    echo 'AllowUsers genericuser' >> /etc/ssh/sshd_config
+
+EXPOSE 22
+
+# Genera host key uniche, verifica la configurazione e avvia SSH in primo piano.
+CMD ["/bin/sh", "-c", "ssh-keygen -A && /usr/sbin/sshd -t && exec /usr/sbin/sshd -D -e"]
