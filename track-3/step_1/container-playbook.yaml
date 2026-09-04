@@ -1,0 +1,43 @@
+---
+- name: Docker registry configurato con playbook
+  hosts: registry
+  become: true
+
+  tasks:
+    - name: aggiorno packs
+      ansible.builtin.apt:
+        update_cache: yes
+    - name: scarico docker
+      ansible.builtin.package:
+        name:
+          - docker.io
+          - python3-docker
+        state: present
+      
+    - name: avvio docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: creo volume
+      ansible.builtin.file:
+        path: /var/lib/registry
+        state: directory
+        mode: '0755'
+      
+    - name: scarico immagine registry
+      ansible.builtin.docker_image:
+        name: registry:2
+        source: pull
+
+    - name: avvio container registry
+      ansible.builtin.docker_container:
+        name: registry
+        image: registry:2
+        state: started
+        restart_policy: always
+        published_ports:
+          - "5000:5000"
+        volumes:
+          - "/var/lib/registry:/var/lib/registry"
