@@ -1,0 +1,5 @@
+.DS_Store
+.vagrant
+.gitignore
+/keys
+**/keys/id_key_genericuser
