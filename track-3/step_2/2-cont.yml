@@ -68,6 +68,7 @@
       community.docker.docker_image:
         name: "{{ item.image }}"
         source: build
+        force_source: true
         state: present
         build:
           path: "/opt/container-builds/{{ item.context }}"
