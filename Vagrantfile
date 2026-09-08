@@ -6,8 +6,8 @@ Vagrant.configure("2") do |config|
     registry.vm.network "private_network", ip: "192.168.58.10"
 
     registry.vm.provider "virtualbox" do |vb|
-      vb.memory = "1024"
-      vb.cpus = 1
+      vb.memory = "2048"
+      vb.cpus = 2
     end
   end
 end
