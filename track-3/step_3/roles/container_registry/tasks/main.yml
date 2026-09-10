@@ -1,0 +1,45 @@
+---
+# tasks file for container_registry
+- name: Crea la directory dati del registry
+  ansible.builtin.file:
+    path: "{{ registry_data_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Scarica l'immagine del registry con Docker
+  community.docker.docker_image:
+    name: "{{ registry_image }}"
+    source: pull
+  when: container_runtime == "docker"
+
+- name: Avvia il registry con Docker
+  community.docker.docker_container:
+    name: "{{ registry_container_name }}"
+    image: "{{ registry_image }}"
+    state: started
+    detach: true
+    restart_policy: always
+    published_ports:
+      - "{{ registry_host_port }}:{{ registry_container_port }}"
+    volumes:
+      - "{{ registry_data_dir }}:/var/lib/registry"
+  when: container_runtime == "docker"
+
+- name: Scarica l'immagine del registry con Podman
+  containers.podman.podman_image:
+    name: "{{ registry_image }}"
+    state: present
+  when: container_runtime == "podman"
+
+- name: Avvia il registry con Podman
+  containers.podman.podman_container:
+    name: "{{ registry_container_name }}"
+    image: "{{ registry_image }}"
+    state: started
+    detach: true
+    restart_policy: always
+    publish:
+      - "{{ registry_host_port }}:{{ registry_container_port }}"
+    volume:
+      - "{{ registry_data_dir }}:/var/lib/registry:Z"
+  when: container_runtime == "podman"

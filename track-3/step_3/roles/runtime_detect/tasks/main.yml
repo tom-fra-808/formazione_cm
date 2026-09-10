@@ -1,0 +1,36 @@
+---
+# tasks file for runtime_detect
+- name: Controlla Docker
+  ansible.builtin.command:
+    cmd: docker --version
+  register: docker_check
+  changed_when: false
+  failed_when: false
+
+- name: Controlla Podman
+  ansible.builtin.command:
+    cmd: podman --version
+  register: podman_check
+  changed_when: false
+  failed_when: false
+
+- name: Seleziona il runtime disponibile
+  ansible.builtin.set_fact:
+    docker_installed: "{{ docker_check.rc == 0 }}"
+    podman_installed: "{{ podman_check.rc == 0 }}"
+    container_runtime: >-
+      {{
+        'docker' if docker_check.rc == 0
+        else 'podman' if podman_check.rc == 0
+        else ''
+      }}
+
+- name: Verifica che Docker o Podman sia disponibile
+  ansible.builtin.assert:
+    that:
+      - container_runtime | length > 0
+    fail_msg: "Docker e Podman non sono installati"
+
+- name: Mostra il runtime selezionato
+  ansible.builtin.debug:
+    msg: "Runtime selezionato: {{ container_runtime }}"

@@ -1,0 +1,9 @@
+---
+- name: Config registry e containers
+  hosts: registry
+  become: true
+
+  roles:
+    - role: runtime_detect
+    - role: container_registry
+    - role: build_images

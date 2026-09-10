@@ -1,0 +1,81 @@
+---
+- name: Crea i contesti di build sulla VM
+  ansible.builtin.file:
+    path: "{{ build_root }}/{{ item.name }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Copia i Containerfile nei contesti remoti
+  ansible.builtin.copy:
+    src: "{{ item.source_dir }}/Containerfile"
+    dest: "{{ build_root }}/{{ item.name }}/Containerfile"
+    mode: "0644"
+  loop: "{{ images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Copia la chiave pubblica nei contesti remoti
+  ansible.builtin.copy:
+    src: "{{ ssh_public_key }}"
+    dest: "{{ build_root }}/{{ item.name }}/id_key_genericuser.pub"
+    mode: "0644"
+  loop: "{{ images }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Costruisce e invia le immagini con Docker
+  community.docker.docker_image:
+    name: "{{ registry_endpoint }}/{{ item.name }}:{{ item.tag }}"
+    source: build
+    push: true
+    build:
+      path: "{{ build_root }}/{{ item.name }}"
+      dockerfile: Containerfile
+  loop: "{{ images }}"
+  loop_control:
+    label: "{{ item.name }}:{{ item.tag }}"
+  when: container_runtime == "docker"
+
+- name: Costruisce e invia le immagini con Podman
+  containers.podman.podman_image:
+    name: "{{ registry_endpoint }}/{{ item.name }}"
+    tag: "{{ item.tag }}"
+    path: "{{ build_root }}/{{ item.name }}"
+    state: present
+    push: true
+    validate_certs: false
+  loop: "{{ images }}"
+  loop_control:
+    label: "{{ item.name }}:{{ item.tag }}"
+  when: container_runtime == "podman"
+
+- name: Avvia i container dalle immagini del registry con Docker
+  community.docker.docker_container:
+    name: "{{ item.name }}"
+    image: "{{ registry_endpoint }}/{{ item.name }}:{{ item.tag }}"
+    state: started
+    image_name_mismatch: recreate
+
+    restart_policy: always
+    published_ports:
+      - "{{ item.host_port }}:22"
+  loop: "{{ images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: container_runtime == "docker"
+
+- name: Avvia i container dalle immagini del registry con Podman
+  containers.podman.podman_container:
+    name: "{{ item.name }}"
+    image: "{{ registry_endpoint }}/{{ item.name }}:{{ item.tag }}"
+    state: started
+    restart_policy: always
+    publish:
+      - "{{ item.host_port }}:22"
+  loop: "{{ images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: container_runtime == "podman"

@@ -1,0 +1,13 @@
+---
+registry_endpoint: "127.0.0.1:5000"
+build_root: "/opt/container-builds"
+ssh_public_key: "{{ playbook_dir }}/../step_2/keys/id_key_genericuser.pub"
+images:
+  - name: ubuntu-ssh
+    tag: "22.04"
+    source_dir: "{{ playbook_dir }}/../step_2/ubuntu"
+    host_port: "2222"
+  - name: rocky-ssh
+    tag: "9"
+    source_dir: "{{ playbook_dir }}/../step_2/rocky"
+    host_port: "2223"

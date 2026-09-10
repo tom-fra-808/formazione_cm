@@ -1,0 +1,7 @@
+---
+# defaults file for container_registry
+registry_image: "docker.io/library/registry:2"
+registry_container_name: "registry"
+registry_host_port: 5000
+registry_container_port: 5000
+registry_data_dir: "/var/lib/registry"
