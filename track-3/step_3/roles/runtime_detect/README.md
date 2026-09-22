@@ -32,15 +32,16 @@ per scegliere i task Docker o Podman.
 
 ## Utilizzo
 
-Il ruolo viene richiamato dal playbook principale:
+Il ruolo viene eseguito per primo da `site.yaml`:
 
 ```yaml
-- name: Rileva il runtime
-  ansible.builtin.include_role:
-    name: runtime_detect
+roles:
+  - role: runtime_detect
+  - role: container_registry
+  - role: build_images
 ```
 
-Eseguire dalla radice del progetto:
+Eseguire dalla radice del repository:
 
 ```bash
 ansible-playbook track-3/step_3/site.yaml --syntax-check
