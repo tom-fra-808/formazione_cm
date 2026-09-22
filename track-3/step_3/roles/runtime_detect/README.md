@@ -12,7 +12,7 @@ anche un host che utilizza Podman.
 
 ## Funzionamento
 
-Il ruolo verifica la presenza del comando e del servizio del runtime. In base al
+Il ruolo verifica la disponibilità di Docker e Podman eseguendo docker --version e podman --version. Se entrambi sono presenti, seleziona Docker; se nessuno è disponibile, interrompe il playbook con un errore. Non verifica che il daemon Docker sia avviato e raggiungibile. In base al
 risultato, rende disponibile l'informazione necessaria a `container_registry` e
 `build_images`.
 
@@ -21,14 +21,14 @@ contesto che gli altri ruoli utilizzeranno.
 
 ## Variabili
 
-Le variabili predefinite si trovano in:
+Il ruolo non richiede variabili di configurazione in ingresso.
 
-```text
-roles/runtime_detect/defaults/main.yml
-```
+Durante l’esecuzione imposta i facts `docker_installed`,
+`podman_installed` e `container_runtime`.
 
-Non sono richieste variabili obbligatorie per l'esecuzione standard del
-laboratorio.
+Il valore di `container_runtime` viene utilizzato dai ruoli successivi
+per scegliere i task Docker o Podman.
+
 
 ## Utilizzo
 
