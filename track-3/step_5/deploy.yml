@@ -1,0 +1,17 @@
+---
+- name: Deploy nel container destinazione
+  hosts: deploy
+  become: true
+
+  tasks:
+    - name: Scarica l'immagine dal registry
+      community.docker.docker_image:
+        name: "{{ image_ref }}"
+        source: pull
+
+    - name: Avvia o aggiorna il container
+      community.docker.docker_container:
+        name: ubuntu-deploy
+        image: "{{ image_ref }}"
+        state: started
+        restart_policy: unless-stopped

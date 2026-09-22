@@ -1,0 +1,45 @@
+pipeline {
+    agent { label 'docker-ansible' }
+
+    environment {
+        IMAGE_PUSH = '127.0.0.1:5000/ubuntu-ssh'
+        IMAGE_DEPLOY = '192.168.58.10:5000/ubuntu-ssh'
+        DOCKER_BUILDKIT = '0'
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                sh '''
+                    docker build \
+                        -f /home/jenkins/agent/ubuntu/Containerfile \
+                        -t "$IMAGE_PUSH:$BUILD_NUMBER" \
+                        /home/jenkins/agent/ubuntu
+                '''
+            }
+        }
+
+        stage('Push') {
+            steps {
+                sh 'docker push "$IMAGE_PUSH:$BUILD_NUMBER"'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                ansiblePlaybook(
+                    playbook: '/home/jenkins/agent/deploy.yml',
+                    inventoryContent: '''
+[deploy]
+target ansible_host=192.168.58.10 ansible_port=2224 ansible_user=genericuser ansible_python_interpreter=/usr/bin/python3
+''',
+                    credentialsId: 'deploy-ssh',
+                    disableHostKeyChecking: true,
+                    extraVars: [
+                        image_ref: "${env.IMAGE_DEPLOY}:${env.BUILD_NUMBER}"
+                    ]
+                )
+            }
+        }
+    }
+}

@@ -1,0 +1,48 @@
+---
+- name: Prepara il container destinazione
+  hosts: registry
+  become: true
+
+  tasks:
+    - name: Costruisce l'immagine con SSH e Docker
+      community.docker.docker_image:
+        name: deploy-target
+        tag: "1.0"
+        source: build
+        force_source: true
+        build:
+          path: /vagrant/track-3/step_5/files
+          dockerfile: Containerfile
+
+    - name: Crea i volumi per i dati del Docker interno
+      community.docker.docker_volume:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - deploy_target_docker
+        - deploy_target_containerd
+
+    - name: Avvia il container destinazione
+      community.docker.docker_container:
+        name: deploy-target
+        image: deploy-target:1.0
+        state: started
+        detach: true
+        init: true
+        privileged: true
+        restart_policy: unless-stopped
+        published_ports:
+          - "2224:22"
+        volumes:
+          - "deploy_target_docker:/var/lib/docker"
+          - "deploy_target_containerd:/var/lib/containerd"
+
+    - name: Verifica che il Docker interno sia pronto
+      community.docker.docker_container_exec:
+        container: deploy-target
+        command: docker info
+      register: docker_ready
+      until: (docker_ready.rc | default(1)) == 0
+      retries: 12
+      delay: 5
+      changed_when: false

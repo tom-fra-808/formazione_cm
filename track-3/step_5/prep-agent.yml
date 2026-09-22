@@ -1,0 +1,32 @@
+---
+- name: Prepara i file della build nell'agent Jenkins
+  hosts: registry
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Installa requests per i moduli Docker nell'agent
+      community.docker.docker_container_exec:
+        container: agent-docker
+        user: root
+        command: /opt/ansible/bin/pip install requests
+
+    - name: Crea la directory del contesto di build
+      community.docker.docker_container_exec:
+        container: agent-docker
+        command: mkdir -p /home/jenkins/agent/ubuntu
+
+    - name: Copia i file Ubuntu nell'agent
+      community.docker.docker_container_copy_into:
+        container: agent-docker
+        path: "/vagrant/track-3/step_2/ubuntu/{{ item }}"
+        container_path: "/home/jenkins/agent/ubuntu/{{ item }}"
+      loop:
+        - Containerfile
+        - id_key_genericuser.pub
+    
+    - name: Copia il playbook di deploy nell'agent
+      community.docker.docker_container_copy_into:
+        container: agent-docker
+        path: /vagrant/track-3/step_5/deploy.yml
+        container_path: /home/jenkins/agent/deploy.yml
