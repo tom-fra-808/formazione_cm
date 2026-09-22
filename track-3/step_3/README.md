@@ -8,11 +8,21 @@ In questo step ho organizzato la configurazione del registry e la costruzione
 delle immagini Docker attraverso ruoli Ansible. Il playbook principale è
 `site.yaml`.
 
+> [!IMPORTANT]
+> **Prerequisiti**
+>
+> - La VM `registry` deve essere avviata e raggiungibile con Ansible.
+> - Docker o Podman deve essere già installato e funzionante: il ruolo `runtime_detect` seleziona il runtime, ma non lo installa.
+> - Devono essere disponibili i Containerfile e la chiave pubblica SSH dello Step 2. Per seguire il percorso del laboratorio, eseguire prima gli Step 1 e 2.
+> - Eseguire i comandi dalla radice del repository.
+>
+> Lo Step 3 riutilizza i nomi e le porte dei container degli step precedenti e può ricrearli: gli esercizi condividono lo stesso ambiente.
+
 ## Obiettivo
 
 - rilevare il runtime disponibile, Docker o Podman;
 - configurare un Docker Registry locale;
-- costruire le immagini dei container dello Step 2;
+- costruire le immagini dei container dello Step 2, successivamente pubblicarle nel registry locale e avviare i rispettivi container SSH;
 - riutilizzare le stesse attività tramite ruoli Ansible.
 
 ## Struttura
@@ -58,11 +68,16 @@ La persistenza è ottenuta collegando la directory della VM al percorso
 disponibili anche se il container del registry viene ricreato.
 
 ### `build_images`
+Questo ruolo costruisce le immagini dello Step 2, le pubblica nel registry
+locale e avvia i container SSH utilizzando il runtime rilevato: Docker o Podman.
 
-Questo ruolo gestisce la costruzione delle immagini dello Step 2. Copia nella
-VM i contesti di build, composti dal `Containerfile` e dai file necessari,
-quindi usa il runtime rilevato per costruire le immagini.
+Copia nella VM i contesti di build, composti dal `Containerfile` e dalla
+chiave pubblica SSH, quindi costruisce e pubblica le immagini nel registry
+all’indirizzo `127.0.0.1:5000`, riferito alla VM.
 
+Avvia i container usando i nomi completi delle immagini, comprensivi
+dell’indirizzo del registry e del tag. La porta `22` dei container viene
+esposta sulla VM tramite la porta `2222` per Ubuntu e `2223` per Rocky.
 Le immagini mantengono i requisiti dello Step 2: accesso SSH con
 `genericuser`, autenticazione tramite chiave pubblica e privilegi `sudo` senza
 password. I nomi, i contesti e i tag vengono gestiti dalle variabili del ruolo,
@@ -83,7 +98,7 @@ il playbook.
 Dalla radice di `formazione_cm` installo le collection richieste:
 
 ```bash
-ansible-galaxy collection install -r track-3/step_3/requirements.yml
+ansible-galaxy collection install -r requirements.yml
 ```
 
 Controllo la sintassi ed eseguo il playbook:

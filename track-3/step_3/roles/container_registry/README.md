@@ -25,7 +25,7 @@ laboratorio.
 Le variabili configurabili si trovano in:
 
 ```text
-roles/container_registry/defaults/main.yml
+track-3/step_3/roles/container_registry/defaults/main.yml
 ```
 
 Da questo file è possibile modificare, secondo la struttura del ruolo,
@@ -33,15 +33,17 @@ l'immagine, il nome del container, la porta e il percorso dello storage.
 
 ## Utilizzo
 
-Il ruolo viene richiamato da `site.yaml` dopo la rilevazione del runtime:
+Il ruolo viene richiamato da `site.yaml` dopo `runtime_detect` e prima
+di `build_images`:
 
 ```yaml
-- name: Configura il registry
-  ansible.builtin.include_role:
-    name: container_registry
+roles:
+  - role: runtime_detect
+  - role: container_registry
+  - role: build_images
 ```
 
-Eseguire il playbook:
+Eseguire dalla radice del repository:
 
 ```bash
 ansible-playbook track-3/step_3/site.yaml
@@ -49,9 +51,23 @@ ansible-playbook track-3/step_3/site.yaml
 
 ## Verifica
 
+Con Docker:
+
 ```bash
-vagrant ssh registry -c 'sudo docker ps --filter name=docker-registry'
+vagrant ssh registry -c 'sudo docker ps --filter name=registry'
+```
+
+Con Podman:
+
+```bash
+vagrant ssh registry -c 'sudo podman ps --filter name=registry'
+```
+
+Verificare poi che l’API del registry risponda:
+
+```bash
 curl http://192.168.58.10:5000/v2/
 ```
 
-Il container deve risultare `Up` e l'API deve rispondere con `200 OK`.
+Il container `registry` deve risultare in esecuzione e l’API deve
+restituire una risposta corretta.

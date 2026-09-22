@@ -1,48 +1,65 @@
 <h1 align="center">Ruolo: build_images</h1>
 
-Questo ruolo costruisce le immagini Docker partendo dai contesti dello Step 2.
-Gestisce il trasferimento dei file nella VM e l'esecuzione delle build tramite
-il runtime rilevato.
+Questo ruolo costruisce le immagini dei container partendo dai file dello
+Step 2, le pubblica nel registry locale e avvia i relativi container SSH
+tramite Docker o Podman.
 
 ## Obiettivo
 
 - preparare i contesti di build nella VM;
-- copiare `Containerfile` e chiavi pubbliche necessarie;
+- copiare i `Containerfile` e la chiave pubblica SSH;
 - costruire le immagini Ubuntu e Rocky dello Step 2;
-- mantenere nomi e tag definiti nelle variabili del ruolo.
+- pubblicare le immagini nel registry locale;
+- avviare i container SSH;
+- gestire nomi, tag e porte tramite le variabili del ruolo.
 
 ## Funzionamento
 
-Per ogni immagine il ruolo copia il relativo contesto nella macchina gestita e
-avvia la build. Le immagini create contengono il server SSH, l'utente
-`genericuser`, l'accesso tramite chiave pubblica e `sudo` senza password.
+Per ogni immagine, il ruolo crea un contesto di build nella VM e vi copia
+il `Containerfile` e la chiave pubblica SSH.
 
-Il ruolo usa il runtime individuato da `runtime_detect`, così la procedura resta
-riutilizzabile anche quando il motore container cambia.
+In base al runtime selezionato da `runtime_detect`, costruisce l’immagine
+con Docker o Podman e la pubblica nel registry locale. Successivamente
+avvia il relativo container, esponendo la porta SSH sulla VM.
+
+Con le variabili predefinite:
+
+- Ubuntu utilizza `127.0.0.1:5000/ubuntu-ssh:22.04` e la porta `2222`;
+- Rocky utilizza `127.0.0.1:5000/rocky-ssh:9` e la porta `2223`.
+
+Le immagini contengono il server SSH, l’utente `genericuser`,
+l’autenticazione tramite chiave pubblica e `sudo` senza password.
 
 ## Variabili
 
-Le variabili del ruolo si trovano in:
+Le variabili predefinite si trovano in:
 
 ```text
-roles/build_images/defaults/main.yml
+track-3/step_3/roles/build_images/defaults/main.yml
 ```
 
-Qui sono definiti i contesti, i nomi delle immagini, i tag e i percorsi usati
-dalla build.
+Il file definisce:
+
+- indirizzo del registry;
+- directory remota dei contesti di build;
+- percorso della chiave pubblica;
+- nomi e tag delle immagini;
+- percorsi dei `Containerfile`;
+- porte SSH pubblicate sulla VM.
 
 ## Utilizzo
 
-Il ruolo viene richiamato dal playbook principale dopo la configurazione del
-registry:
+Il ruolo è richiamato da `site.yaml` dopo `runtime_detect` e
+`container_registry`:
 
 ```yaml
-- name: Costruisce le immagini
-  ansible.builtin.include_role:
-    name: build_images
+roles:
+  - role: runtime_detect
+  - role: container_registry
+  - role: build_images
 ```
 
-Eseguire dalla radice del progetto:
+Eseguire dalla radice del repository:
 
 ```bash
 ansible-playbook track-3/step_3/site.yaml
@@ -50,9 +67,29 @@ ansible-playbook track-3/step_3/site.yaml
 
 ## Verifica
 
+Con Docker:
+
 ```bash
 vagrant ssh registry -c 'sudo docker images'
+vagrant ssh registry -c 'sudo docker ps'
 ```
 
-Le immagini definite nelle variabili del ruolo devono essere presenti e il
-recap Ansible deve terminare con `unreachable=0` e `failed=0`.
+Con Podman:
+
+```bash
+vagrant ssh registry -c 'sudo podman images'
+vagrant ssh registry -c 'sudo podman ps'
+```
+
+Per controllare le immagini pubblicate nel registry:
+
+```bash
+curl http://192.168.58.10:5000/v2/_catalog
+curl http://192.168.58.10:5000/v2/ubuntu-ssh/tags/list
+curl http://192.168.58.10:5000/v2/rocky-ssh/tags/list
+```
+
+Il catalogo deve contenere `ubuntu-ssh` e `rocky-ssh`. Con le variabili
+predefinite, i tag attesi sono rispettivamente `22.04` e `9`.
+
+Il recap Ansible deve terminare con `unreachable=0` e `failed=0`.

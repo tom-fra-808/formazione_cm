@@ -5,7 +5,7 @@
 </p>
 
 In questo step ho configurato un Docker Registry locale su una VM Debian 12.
-Ansible installa e avvia Docker, poi crea il container `docker-registry` usando
+Ansible installa e avvia Docker, poi crea il container `registry` usando
 l'immagine `registry:2`.
 
 Il registry è raggiungibile in HTTP su `192.168.58.10:5000`, senza autenticazione.
@@ -21,7 +21,7 @@ I percorsi sono relativi alla radice di `formazione_cm`.
 | `Vagrantfile` | Crea la VM `registry` con IP `192.168.58.10` |
 | `inventory.ini` | Definisce l'host `registry`, l'utente `vagrant` e la chiave SSH |
 | `ansible.cfg` | Imposta l'inventario da utilizzare |
-| `track-3/step_1/requirements.yml` | Installa la collection `community.docker` |
+| `requirements.yml` | Installa la collection `community.docker` |
 | `track-3/step_1/container-playbook.yaml` | Installa Docker e avvia il registry |
 
 ## Avvio
@@ -32,7 +32,7 @@ Dalla radice del progetto, installa la collection usata dal playbook:
 
 ```bash
 cd ~/Desktop/formazione_cm
-ansible-galaxy collection install -r track-3/step_1/requirements.yml
+ansible-galaxy collection install -r requirements.yml
 ```
 
 Avvia la VM ed esegui il playbook:
@@ -49,7 +49,7 @@ Il recap deve terminare con `unreachable=0` e `failed=0`.
 Controlla che il container sia avviato e che l'API risponda:
 
 ```bash
-vagrant ssh registry -c 'sudo docker ps --filter name=docker-registry'
+vagrant ssh registry -c 'sudo docker ps --filter name=registry'
 curl -i http://192.168.58.10:5000/v2/
 ```
 
