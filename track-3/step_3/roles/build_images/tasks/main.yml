@@ -16,6 +16,7 @@
   loop: "{{ images }}"
   loop_control:
     label: "{{ item.name }}"
+  register: cont_check_copy
 
 - name: Copia la chiave pubblica nei contesti remoti
   ansible.builtin.copy:
@@ -25,6 +26,7 @@
   loop: "{{ images }}"
   loop_control:
     label: "{{ item.name }}"
+  register: key_check_copy
 
 - name: Costruisce e invia le immagini con Docker
   community.docker.docker_image:
@@ -34,10 +36,15 @@
     build:
       path: "{{ build_root }}/{{ item.name }}"
       dockerfile: Containerfile
+    # forza tramite i risultati dei register dei task precedenti la ricostruzione dell'immagine qualora cambiasse il containerfile e/o la chiave e di conseguenza il task copy risultasse changed
+    force_source: "{{ cont_check_copy.results[image_index].changed or key_check_copy.results[image_index].changed }}"
   loop: "{{ images }}"
   loop_control:
     label: "{{ item.name }}:{{ item.tag }}"
+    # associa ad ogni immagine un risultato dei task di copy nella posizione del ciclo
+    index_var: image_index 
   when: container_runtime == "docker"
+  
 
 - name: Costruisce e invia le immagini con Podman
   containers.podman.podman_image:
