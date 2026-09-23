@@ -25,6 +25,7 @@ RUN mkdir -p /var/run/sshd && \
     sed -ri 's/^[#[:space:]]*PubkeyAuthentication[[:space:]].*/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
     echo 'AllowUsers genericuser' >> /etc/ssh/sshd_config
 
+# Rimuove le chiavi precedenti
 RUN rm -f /etc/ssh/ssh_host_*
 
 EXPOSE 22
