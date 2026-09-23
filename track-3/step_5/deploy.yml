@@ -15,3 +15,5 @@
         image: "{{ image_ref }}"
         state: started
         restart_policy: unless-stopped
+        volumes:
+          - "/mnt/mac-share:/data"

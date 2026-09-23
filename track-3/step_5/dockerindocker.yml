@@ -36,6 +36,7 @@
         volumes:
           - "deploy_target_docker:/var/lib/docker"
           - "deploy_target_containerd:/var/lib/containerd"
+          - "/shared-data:/mnt/mac-share"
 
     - name: Verifica che il Docker interno sia pronto
       community.docker.docker_container_exec:

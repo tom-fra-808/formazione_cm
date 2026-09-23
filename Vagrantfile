@@ -4,6 +4,7 @@ Vagrant.configure("2") do |config|
     registry.vm.box = "bento/debian-12"
     registry.vm.hostname = "docker-registry"
     registry.vm.network "private_network", ip: "192.168.58.10"
+    registry.vm.synced_folder "./shared-data", "/shared-data"
 
     registry.vm.provider "virtualbox" do |vb|
       vb.memory = "2048"
