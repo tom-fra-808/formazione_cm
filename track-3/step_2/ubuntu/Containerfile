@@ -25,6 +25,8 @@ RUN mkdir -p /var/run/sshd && \
     sed -ri 's/^[#[:space:]]*PubkeyAuthentication[[:space:]].*/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
     echo 'AllowUsers genericuser' >> /etc/ssh/sshd_config
 
+RUN rm -f /etc/ssh/ssh_host_*
+
 EXPOSE 22
 
 # Genera host key uniche, verifica la configurazione e avvia SSH in primo piano.
