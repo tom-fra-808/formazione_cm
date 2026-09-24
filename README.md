@@ -1,4 +1,4 @@
-[TRACK 3] Configuration Management
+# [TRACK 3] Configuration Management
 Include:
 - step della track 3
   - step 1: Creazione di un registry locale tramite un playbook [container-playbook](track-3/step_1/container-playbook.yaml) ([DOCUMENTAZIONE](track-3/step_1/README.md))
