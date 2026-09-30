@@ -12,7 +12,7 @@ anche un host che utilizza Podman.
 
 ## Funzionamento
 
-Il ruolo verifica la disponibilità di Docker e Podman eseguendo docker --version e podman --version. Se entrambi sono presenti, seleziona Docker; se nessuno è disponibile, interrompe il playbook con un errore. Non verifica che il daemon Docker sia avviato e raggiungibile. In base al
+Il ruolo verifica la disponibilità di Docker e Podman eseguendo docker info e podman info. Se entrambi sono presenti, seleziona Docker; se nessuno è disponibile, interrompe il playbook con un errore. Non verifica che il daemon Docker sia avviato e raggiungibile. In base al
 risultato, rende disponibile l'informazione necessaria a `container_registry` e
 `build_images`.
 
